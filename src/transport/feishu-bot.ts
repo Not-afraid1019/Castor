@@ -2,9 +2,7 @@ import * as lark from "@larksuiteoapi/node-sdk";
 import type { ITransport, MessageHandler } from "./types.js";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
-
-// Thinking emoji - indicates bot is processing
-const THINKING_EMOJI = "THUMBSUP";
+import { pickReactionEmoji } from "../utils/emoji-picker.js";
 
 export class FeishuBotTransport implements ITransport {
   private wsClient?: lark.WSClient;
@@ -77,8 +75,10 @@ export class FeishuBotTransport implements ITransport {
 
     logger.info({ conversationId, senderId, text }, "Received message");
 
-    // Add reaction to indicate "thinking"
-    const reactionId = await this.addReaction(messageId);
+    // Add context-aware reaction to indicate "processing"
+    const emoji = pickReactionEmoji(text);
+    logger.debug({ emoji, text }, "Picked reaction emoji");
+    const reactionId = await this.addReaction(messageId, emoji);
 
     try {
       const reply = await handler({ conversationId, text, senderId });
@@ -100,11 +100,11 @@ export class FeishuBotTransport implements ITransport {
     }
   }
 
-  private async addReaction(messageId: string): Promise<string | null> {
+  private async addReaction(messageId: string, emoji: string): Promise<string | null> {
     try {
       const resp = await this.apiClient!.im.messageReaction.create({
         path: { message_id: messageId },
-        data: { reaction_type: { emoji_type: THINKING_EMOJI } },
+        data: { reaction_type: { emoji_type: emoji } },
       });
       return resp.data?.reaction_id ?? null;
     } catch (err) {
