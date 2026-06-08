@@ -65,8 +65,8 @@ const rules: EmojiRule[] = [
   },
 ];
 
-// Default fallback
-const DEFAULT_EMOJI = "OnIt";
+// Default fallback — typing/keyboard to indicate "working on it"
+const DEFAULT_EMOJI = "Typing";
 
 export function pickReactionEmoji(text: string): string {
   for (const rule of rules) {

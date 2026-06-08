@@ -53,8 +53,8 @@ describe("pickReactionEmoji", () => {
     expect(pickReactionEmoji("紧急！马上帮我处理")).toBe("Zap");
   });
 
-  it("fallback → OnIt", () => {
-    expect(pickReactionEmoji("随便聊聊")).toBe("OnIt");
-    expect(pickReactionEmoji("ok")).toBe("OnIt");
+  it("fallback → Typing", () => {
+    expect(pickReactionEmoji("随便聊聊")).toBe("Typing");
+    expect(pickReactionEmoji("ok")).toBe("Typing");
   });
 });
