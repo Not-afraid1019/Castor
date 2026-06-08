@@ -37,7 +37,7 @@ FEISHU_APP_SECRET=xxx
 | `LLM_BASEURL` | 是 | - | API 地址（兼容 OpenAI 协议的任意服务） |
 | `LLM_MODEL_NAME` | 是 | - | 模型名称 |
 | `LLM_PROTOCOL` | 否 | 自动检测 | `openai` 或 `anthropic`，不填则根据 URL/模型名自动判断 |
-| `LLM_MAX_TOKENS` | 否 | 4096 | 最大输出 token 数 |
+| `LLM_MAX_TOKENS` | 否 | 不限 | 最大输出 token 数，不设则由模型上下文窗口决定 |
 | `FEISHU_APP_ID` | bot 模式 | - | 飞书应用 App ID |
 | `FEISHU_APP_SECRET` | bot 模式 | - | 飞书应用 App Secret |
 | `WEB_SEARCH_PROVIDER` | 否 | - | 搜索引擎提供商（目前支持 `tavily`） |
@@ -45,7 +45,7 @@ FEISHU_APP_SECRET=xxx
 | `DATA_DIR` | 否 | `./data` | 数据存储目录 |
 | `WORKSPACE_DIR` | 否 | - | 工作目录，设置后文件操作受限于此目录 |
 | `SCRIPT_TIMEOUT` | 否 | 30000 | 脚本执行超时（毫秒） |
-| `MAX_CONVERSATION_MESSAGES` | 否 | 50 | 单会话最大保留消息数 |
+| `MAX_CONVERSATION_MESSAGES` | 否 | 不限 | 单会话最大保留消息数，不设则保留全部历史 |
 
 ### 3. 启动
 

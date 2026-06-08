@@ -20,7 +20,8 @@ export class AnthropicAdapter implements ILLMClient {
       baseURL: cfg.LLM_BASEURL,
     });
     this.model = cfg.LLM_MODEL_NAME;
-    this.maxTokens = cfg.LLM_MAX_TOKENS;
+    // Anthropic requires max_tokens; default to 8192 (let context window be the real limit)
+    this.maxTokens = cfg.LLM_MAX_TOKENS ?? 8192;
   }
 
   async chat(messages: LLMMessage[], tools?: ToolDefinition[]): Promise<LLMResponse> {

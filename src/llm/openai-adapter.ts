@@ -14,7 +14,7 @@ type OAIMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 export class OpenAIAdapter implements ILLMClient {
   private client: OpenAI;
   private model: string;
-  private maxTokens: number;
+  private maxTokens?: number;
 
   constructor(cfg: Config) {
     this.client = new OpenAI({ apiKey: cfg.LLM_API_KEY, baseURL: cfg.LLM_BASEURL });
@@ -32,7 +32,7 @@ export class OpenAIAdapter implements ILLMClient {
     const resp = await withRetry(() =>
       this.client.chat.completions.create({
         model: this.model,
-        max_tokens: this.maxTokens,
+        ...(this.maxTokens ? { max_tokens: this.maxTokens } : {}),
         messages: oaiMessages,
         ...(oaiTools?.length ? { tools: oaiTools } : {}),
       }),

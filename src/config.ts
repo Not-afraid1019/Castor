@@ -3,27 +3,36 @@ import { z } from "zod";
 
 loadEnv();
 
+// Treat empty strings as undefined for optional fields
+const optStr = z.preprocess((v) => (v === "" ? undefined : v), z.string().optional());
+const optEnum = <T extends [string, ...string[]]>(values: T) =>
+  z.preprocess((v) => (v === "" ? undefined : v), z.enum(values).optional());
+const optNum = z.preprocess(
+  (v) => (v === "" || v === undefined ? undefined : Number(v)),
+  z.number().int().positive().optional(),
+);
+
 const configSchema = z.object({
   // LLM
   LLM_API_KEY: z.string().min(1),
   LLM_BASEURL: z.string().url(),
   LLM_MODEL_NAME: z.string().min(1),
-  LLM_PROTOCOL: z.enum(["openai", "anthropic"]).optional(),
-  LLM_MAX_TOKENS: z.coerce.number().int().positive().default(4096),
+  LLM_PROTOCOL: optEnum(["openai", "anthropic"]),
+  LLM_MAX_TOKENS: optNum,
 
   // Feishu
-  FEISHU_APP_ID: z.string().optional(),
-  FEISHU_APP_SECRET: z.string().optional(),
+  FEISHU_APP_ID: optStr,
+  FEISHU_APP_SECRET: optStr,
 
   // Web Search
-  WEB_SEARCH_PROVIDER: z.string().optional(),
-  WEB_SEARCH_API_KEY: z.string().optional(),
+  WEB_SEARCH_PROVIDER: optStr,
+  WEB_SEARCH_API_KEY: optStr,
 
   // Agent
   DATA_DIR: z.string().default("./data"),
-  WORKSPACE_DIR: z.string().optional(),
+  WORKSPACE_DIR: optStr,
   SCRIPT_TIMEOUT: z.coerce.number().int().positive().default(30000),
-  MAX_CONVERSATION_MESSAGES: z.coerce.number().int().positive().default(50),
+  MAX_CONVERSATION_MESSAGES: optNum,
 });
 
 export type Config = z.infer<typeof configSchema>;

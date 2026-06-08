@@ -23,9 +23,9 @@ export class JsonStore implements IConversationStore {
   async save(conversation: Conversation): Promise<void> {
     await fs.mkdir(this.dir, { recursive: true });
     const filepath = this.filepath(conversation.id);
-    // Trim old messages if exceeding max
+    // Trim old messages if max is configured
     const max = config.MAX_CONVERSATION_MESSAGES;
-    if (conversation.messages.length > max) {
+    if (max && conversation.messages.length > max) {
       // Keep system message(s) + latest messages
       const systemMsgs = conversation.messages.filter((m) => m.role === "system");
       const nonSystem = conversation.messages.filter((m) => m.role !== "system");
