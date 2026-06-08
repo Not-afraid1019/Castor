@@ -24,11 +24,21 @@ export class FeishuBotTransport implements ITransport {
     this.wsClient = new lark.WSClient({
       appId: config.FEISHU_APP_ID,
       appSecret: config.FEISHU_APP_SECRET,
-      loggerLevel: lark.LoggerLevel.info,
+      loggerLevel: lark.LoggerLevel.debug,
+      onReady: () => {
+        logger.info("Feishu WebSocket connection established");
+      },
+      onError: (err: any) => {
+        logger.error({ err }, "Feishu WebSocket error");
+      },
+      onReconnecting: () => {
+        logger.warn("Feishu WebSocket reconnecting...");
+      },
     });
 
     const eventDispatcher = new lark.EventDispatcher({}).register({
       "im.message.receive_v1": async (data: any) => {
+        logger.debug({ data: JSON.stringify(data).slice(0, 500) }, "Raw event received");
         try {
           await this.handleEvent(data, handler);
         } catch (err) {
@@ -38,7 +48,7 @@ export class FeishuBotTransport implements ITransport {
     });
 
     await this.wsClient.start({ eventDispatcher });
-    logger.info("Feishu WebSocket bot connected");
+    logger.info("Feishu WebSocket bot starting...");
   }
 
   async stop(): Promise<void> {
