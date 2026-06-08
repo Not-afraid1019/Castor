@@ -17,7 +17,8 @@ export class AnthropicAdapter implements ILLMClient {
   constructor(cfg: Config) {
     this.client = new Anthropic({
       apiKey: cfg.LLM_API_KEY,
-      baseURL: cfg.LLM_BASEURL,
+      baseURL: `${cfg.LLM_BASEURL}/anthropic`,
+      defaultHeaders: { Authorization: `Bearer ${cfg.LLM_API_KEY}` },
     });
     this.model = cfg.LLM_MODEL_NAME;
     // Anthropic requires max_tokens; default to 8192 (let context window be the real limit)

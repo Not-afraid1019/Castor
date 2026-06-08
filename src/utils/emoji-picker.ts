@@ -67,8 +67,8 @@ const rules: EmojiRule[] = [
   },
 ];
 
-// Default fallback — thumbsup to indicate "received, working on it"
-const DEFAULT_EMOJI = "THUMBSUP";
+// Default fallback — typing to indicate "received, working on it"
+const DEFAULT_EMOJI = "Typing";
 
 export function pickReactionEmoji(text: string): string {
   for (const rule of rules) {

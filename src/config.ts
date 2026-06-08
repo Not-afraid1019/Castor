@@ -72,15 +72,20 @@ function stripPrefix(raw: RawConfig): Config {
   };
 }
 
-function detectProtocol(baseUrl: string, model: string): "openai" | "anthropic" {
-  if (baseUrl.includes("anthropic")) return "anthropic";
-  if (model.startsWith("claude")) return "anthropic";
+function detectProtocol(_baseUrl: string, model: string): "openai" | "anthropic" {
+  if (model.includes("claude")) return "anthropic";
   return "openai";
+}
+
+/** Strip trailing /v1 or /anthropic/v1 so adapters can append the correct path */
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/(anthropic\/)?v1\/?$/, "");
 }
 
 export function loadConfig(): Config {
   const raw = configSchema.parse(process.env);
   const cfg = stripPrefix(raw);
+  cfg.LLM_BASEURL = normalizeBaseUrl(cfg.LLM_BASEURL);
   if (!cfg.LLM_PROTOCOL) {
     cfg.LLM_PROTOCOL = detectProtocol(cfg.LLM_BASEURL, cfg.LLM_MODEL_NAME);
   }

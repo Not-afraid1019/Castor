@@ -53,8 +53,8 @@ describe("pickReactionEmoji", () => {
     expect(pickReactionEmoji("what is TypeScript?")).toBe("MUSCLE");
   });
 
-  it("fallback → THUMBSUP", () => {
-    expect(pickReactionEmoji("随便聊聊")).toBe("THUMBSUP");
-    expect(pickReactionEmoji("ok")).toBe("THUMBSUP");
+  it("fallback → Typing", () => {
+    expect(pickReactionEmoji("随便聊聊")).toBe("Typing");
+    expect(pickReactionEmoji("ok")).toBe("Typing");
   });
 });

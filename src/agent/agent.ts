@@ -3,6 +3,7 @@ import type { ToolRegistry } from "../tools/registry.js";
 import type { IConversationStore, Conversation } from "../memory/types.js";
 import { buildSystemPrompt } from "./prompt.js";
 import { logger } from "../logger.js";
+import { config } from "../config.js";
 import { KeyedMutex } from "../utils/mutex.js";
 
 const MAX_TOOL_ROUNDS = 10;
@@ -61,6 +62,11 @@ export class Agent {
     // Build messages with system prompt
     const systemMsg: LLMMessage = { role: "system", content: buildSystemPrompt() };
     conversation.messages.push({ role: "user", content: userMessage });
+
+    // Trim conversation history if MAX_CONVERSATION_MESSAGES is configured
+    if (config.MAX_CONVERSATION_MESSAGES && conversation.messages.length > config.MAX_CONVERSATION_MESSAGES) {
+      conversation.messages = this.trimMessages(conversation.messages, config.MAX_CONVERSATION_MESSAGES);
+    }
 
     const messages: LLMMessage[] = [systemMsg, ...conversation.messages];
     const toolDefs = this.tools.getDefinitions();
@@ -125,5 +131,33 @@ export class Agent {
     conversation.updatedAt = new Date().toISOString();
     await this.store.save(conversation);
     return fallback;
+  }
+
+  /**
+   * Trim messages to keep the most recent ones within the limit.
+   * Ensures tool_call and tool_result pairs are not broken apart.
+   */
+  private trimMessages(messages: LLMMessage[], limit: number): LLMMessage[] {
+    if (messages.length <= limit) return messages;
+
+    // Start from the end and work backwards to find a clean cut point
+    const trimmed = messages.slice(-limit);
+
+    // If the first message is a tool result, we need to remove orphaned tool messages
+    // until we find a clean boundary (user or assistant without toolCalls)
+    while (trimmed.length > 0) {
+      const first = trimmed[0];
+      if (first.role === "tool") {
+        // Orphaned tool result — remove it
+        trimmed.shift();
+      } else if (first.role === "assistant" && first.toolCalls?.length) {
+        // Assistant with tool_calls but no corresponding tool results after trim — remove
+        trimmed.shift();
+      } else {
+        break;
+      }
+    }
+
+    return trimmed;
   }
 }

@@ -17,7 +17,11 @@ export class OpenAIAdapter implements ILLMClient {
   private maxTokens?: number;
 
   constructor(cfg: Config) {
-    this.client = new OpenAI({ apiKey: cfg.LLM_API_KEY, baseURL: cfg.LLM_BASEURL });
+    this.client = new OpenAI({
+      apiKey: cfg.LLM_API_KEY,
+      baseURL: `${cfg.LLM_BASEURL}/v1`,
+      defaultHeaders: { "api-key": cfg.LLM_API_KEY },
+    });
     this.model = cfg.LLM_MODEL_NAME;
     this.maxTokens = cfg.LLM_MAX_TOKENS;
   }
