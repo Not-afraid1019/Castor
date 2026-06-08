@@ -2,8 +2,10 @@
  * Pick an appropriate reaction emoji based on message content.
  * Must be instant (no async/LLM calls) since it's used before processing.
  *
- * Feishu emoji_type reference:
- * https://open.feishu.cn/document/server-docs/im-v1/message-reaction/emojis-introduce
+ * Feishu supported emoji_type values:
+ * THUMBSUP, SMILE, HEART, CRYING, FACEPALM, OK, FIRE,
+ * CLAP, PARTY, EYES, MUSCLE, JIAYI, FINGERHEART,
+ * LAUGH, SURPRISED, PENSIVEFACE
  */
 
 interface EmojiRule {
@@ -16,57 +18,57 @@ const rules: EmojiRule[] = [
   // Greeting / casual (anchored to start → very specific)
   {
     patterns: [/^(hi|hello|hey|你好|嗨|早|晚上好|下午好)/i],
-    emoji: "Wave",
+    emoji: "SMILE",
   },
   // Thanks / appreciation
   {
     patterns: [/(谢谢|感谢|thanks|thank you|thx|辛苦|棒|厉害|不错)/i],
-    emoji: "Heart",
+    emoji: "HEART",
   },
   // Urgent / ASAP (check early so it isn't swallowed by others)
   {
     patterns: [/(紧急|urgent|asap|赶紧|马上|立刻|immediately)/i],
-    emoji: "Zap",
+    emoji: "FIRE",
   },
   // Translation
   {
     patterns: [/(翻译|translate|英译中|中译英)/i],
-    emoji: "Globe",
+    emoji: "OK",
   },
   // Search / lookup
   {
     patterns: [/(搜索|搜一下|查一下|查找|look\s?up|search|google|找一下|帮我找)/i],
-    emoji: "MagnifyingGlassTiltedRight",
+    emoji: "EYES",
   },
   // Code / programming (before Writing — "写代码" should match Code, not Writing)
   {
     patterns: [/(代码|code|编程|bug|debug|脚本|script|function|函数|程序|typescript|javascript|python)/i],
-    emoji: "LaptopComputer",
+    emoji: "MUSCLE",
   },
   // File operations
   {
     patterns: [/(文件|file|读取|read|保存|save|目录|folder|directory)/i],
-    emoji: "OpenFileFolder",
+    emoji: "OK",
   },
   // Math / calculation
   {
     patterns: [/(计算|算一下|calculate|math|统计|数据|data|分析|analyze)/i],
-    emoji: "BarChart",
+    emoji: "MUSCLE",
   },
   // Writing / creation (after Code so "写代码" doesn't land here)
   {
     patterns: [/(写|编写|生成|创建|create|write|generate|draft|起草)/i],
-    emoji: "Writing",
+    emoji: "MUSCLE",
   },
   // Question / help (broad, keep near the end)
   {
     patterns: [/(怎么|如何|为什么|是什么|什么是|how|why|what|where|when|could you|can you|\?|？)/i],
-    emoji: "Thinking",
+    emoji: "PENSIVEFACE",
   },
 ];
 
-// Default fallback — typing/keyboard to indicate "working on it"
-const DEFAULT_EMOJI = "Typing";
+// Default fallback — thumbsup to indicate "received, working on it"
+const DEFAULT_EMOJI = "THUMBSUP";
 
 export function pickReactionEmoji(text: string): string {
   for (const rule of rules) {
