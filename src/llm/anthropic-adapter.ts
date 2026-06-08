@@ -7,6 +7,7 @@ import type {
   ToolCall,
 } from "./types.js";
 import type { Config } from "../config.js";
+import { withRetry } from "../utils/retry.js";
 
 export class AnthropicAdapter implements ILLMClient {
   private client: Anthropic;
@@ -34,13 +35,15 @@ export class AnthropicAdapter implements ILLMClient {
 
     const anthropicMessages = nonSystemMsgs.map((m) => this.toAnthropicMessage(m));
 
-    const resp = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      ...(systemMsg ? { system: systemMsg.content } : {}),
-      messages: anthropicMessages,
-      ...(anthropicTools?.length ? { tools: anthropicTools } : {}),
-    });
+    const resp = await withRetry(() =>
+      this.client.messages.create({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        ...(systemMsg ? { system: systemMsg.content } : {}),
+        messages: anthropicMessages,
+        ...(anthropicTools?.length ? { tools: anthropicTools } : {}),
+      }),
+    );
 
     let content = "";
     const toolCalls: ToolCall[] = [];

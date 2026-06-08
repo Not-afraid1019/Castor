@@ -7,6 +7,7 @@ import type {
   ToolCall,
 } from "./types.js";
 import type { Config } from "../config.js";
+import { withRetry } from "../utils/retry.js";
 
 type OAIMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
@@ -28,12 +29,14 @@ export class OpenAIAdapter implements ILLMClient {
       function: { name: t.name, description: t.description, parameters: t.parameters },
     }));
 
-    const resp = await this.client.chat.completions.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      messages: oaiMessages,
-      ...(oaiTools?.length ? { tools: oaiTools } : {}),
-    });
+    const resp = await withRetry(() =>
+      this.client.chat.completions.create({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        messages: oaiMessages,
+        ...(oaiTools?.length ? { tools: oaiTools } : {}),
+      }),
+    );
 
     const choice = resp.choices[0];
     const msg = choice.message;

@@ -32,13 +32,24 @@ export class Agent {
     const messages: LLMMessage[] = [systemMsg, ...conversation.messages];
     const toolDefs = this.tools.getDefinitions();
 
-    // Agent loop
+    // Agent loop with error recovery
     let rounds = 0;
     while (rounds < MAX_TOOL_ROUNDS) {
       rounds++;
       logger.debug({ round: rounds }, "LLM call");
 
-      const response = await this.llm.chat(messages, toolDefs);
+      let response;
+      try {
+        response = await this.llm.chat(messages, toolDefs);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error({ error: msg, round: rounds }, "LLM call failed");
+        const errorReply = "抱歉，AI 服务暂时不可用，请稍后再试。";
+        conversation.messages.push({ role: "assistant", content: errorReply });
+        conversation.updatedAt = new Date().toISOString();
+        await this.store.save(conversation);
+        return errorReply;
+      }
 
       if (!response.toolCalls?.length) {
         // Final text response
@@ -60,7 +71,11 @@ export class Agent {
 
       for (const tc of response.toolCalls) {
         logger.info({ tool: tc.name, args: tc.arguments }, "Executing tool");
-        const result = await this.tools.execute(tc.name, tc.arguments);
+        // Tools already have internal error handling in registry, but wrap for safety
+        const result = await this.tools.execute(tc.name, {
+          ...tc.arguments,
+          conversation_id: conversationId,
+        });
         const toolMsg: LLMMessage = {
           role: "tool",
           content: result,
@@ -73,7 +88,7 @@ export class Agent {
     }
 
     // If we hit the max rounds, return what we have
-    const fallback = "I've reached the maximum number of tool execution rounds. Here's what I accomplished so far.";
+    const fallback = "已达到最大工具调用轮数，以上是我目前完成的内容。";
     conversation.messages.push({ role: "assistant", content: fallback });
     conversation.updatedAt = new Date().toISOString();
     await this.store.save(conversation);

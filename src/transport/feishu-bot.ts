@@ -3,9 +3,13 @@ import type { ITransport, MessageHandler } from "./types.js";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
 
+// Thinking emoji - indicates bot is processing
+const THINKING_EMOJI = "THUMBSUP";
+
 export class FeishuBotTransport implements ITransport {
   private wsClient?: lark.WSClient;
   private apiClient?: lark.Client;
+  private processedMessages = new Set<string>();
 
   async start(handler: MessageHandler): Promise<void> {
     if (!config.FEISHU_APP_ID || !config.FEISHU_APP_SECRET) {
@@ -45,6 +49,19 @@ export class FeishuBotTransport implements ITransport {
     const msg = data.message;
     if (!msg || msg.message_type !== "text") return;
 
+    // Dedup by message_id
+    const messageId: string = msg.message_id;
+    if (this.processedMessages.has(messageId)) {
+      logger.debug({ messageId }, "Duplicate message, skipping");
+      return;
+    }
+    this.processedMessages.add(messageId);
+    // Prevent memory leak: cap the dedup set
+    if (this.processedMessages.size > 1000) {
+      const first = this.processedMessages.values().next().value!;
+      this.processedMessages.delete(first);
+    }
+
     const content = JSON.parse(msg.content);
     let text: string = content.text || "";
 
@@ -60,16 +77,49 @@ export class FeishuBotTransport implements ITransport {
 
     logger.info({ conversationId, senderId, text }, "Received message");
 
-    const reply = await handler({ conversationId, text, senderId });
+    // Add reaction to indicate "thinking"
+    const reactionId = await this.addReaction(messageId);
 
-    // Send reply
-    await this.apiClient!.im.message.create({
-      params: { receive_id_type: "chat_id" },
-      data: {
-        receive_id: msg.chat_id,
-        msg_type: "text",
-        content: JSON.stringify({ text: reply }),
-      },
-    });
+    try {
+      const reply = await handler({ conversationId, text, senderId });
+
+      // Send reply
+      await this.apiClient!.im.message.create({
+        params: { receive_id_type: "chat_id" },
+        data: {
+          receive_id: msg.chat_id,
+          msg_type: "text",
+          content: JSON.stringify({ text: reply }),
+        },
+      });
+    } finally {
+      // Remove thinking reaction after reply is sent (or on error)
+      if (reactionId) {
+        await this.removeReaction(messageId, reactionId);
+      }
+    }
+  }
+
+  private async addReaction(messageId: string): Promise<string | null> {
+    try {
+      const resp = await this.apiClient!.im.messageReaction.create({
+        path: { message_id: messageId },
+        data: { reaction_type: { emoji_type: THINKING_EMOJI } },
+      });
+      return resp.data?.reaction_id ?? null;
+    } catch (err) {
+      logger.debug({ err, messageId }, "Failed to add reaction (non-critical)");
+      return null;
+    }
+  }
+
+  private async removeReaction(messageId: string, reactionId: string): Promise<void> {
+    try {
+      await this.apiClient!.im.messageReaction.delete({
+        path: { message_id: messageId, reaction_id: reactionId },
+      });
+    } catch (err) {
+      logger.debug({ err, messageId }, "Failed to remove reaction (non-critical)");
+    }
   }
 }
