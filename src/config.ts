@@ -14,28 +14,63 @@ const optNum = z.preprocess(
 
 const configSchema = z.object({
   // LLM
-  LLM_API_KEY: z.string().min(1),
-  LLM_BASEURL: z.string().url(),
-  LLM_MODEL_NAME: z.string().min(1),
-  LLM_PROTOCOL: optEnum(["openai", "anthropic"]),
-  LLM_MAX_TOKENS: optNum,
+  CASTOR_LLM_API_KEY: z.string().min(1),
+  CASTOR_LLM_BASEURL: z.string().url(),
+  CASTOR_LLM_MODEL_NAME: z.string().min(1),
+  CASTOR_LLM_PROTOCOL: optEnum(["openai", "anthropic"]),
+  CASTOR_LLM_MAX_TOKENS: optNum,
 
   // Feishu
-  FEISHU_APP_ID: optStr,
-  FEISHU_APP_SECRET: optStr,
+  CASTOR_FEISHU_APP_ID: optStr,
+  CASTOR_FEISHU_APP_SECRET: optStr,
 
   // Web Search
-  WEB_SEARCH_PROVIDER: optStr,
-  WEB_SEARCH_API_KEY: optStr,
+  CASTOR_WEB_SEARCH_PROVIDER: optStr,
+  CASTOR_WEB_SEARCH_API_KEY: optStr,
 
   // Agent
-  DATA_DIR: z.string().default("./data"),
-  WORKSPACE_DIR: optStr,
-  SCRIPT_TIMEOUT: z.coerce.number().int().positive().default(30000),
-  MAX_CONVERSATION_MESSAGES: optNum,
+  CASTOR_DATA_DIR: z.string().default("./data"),
+  CASTOR_WORKSPACE_DIR: optStr,
+  CASTOR_SCRIPT_TIMEOUT: z.coerce.number().int().positive().default(30000),
+  CASTOR_MAX_CONVERSATION_MESSAGES: optNum,
 });
 
-export type Config = z.infer<typeof configSchema>;
+type RawConfig = z.infer<typeof configSchema>;
+
+// Export a friendlier Config type without the prefix
+export interface Config {
+  LLM_API_KEY: string;
+  LLM_BASEURL: string;
+  LLM_MODEL_NAME: string;
+  LLM_PROTOCOL?: "openai" | "anthropic";
+  LLM_MAX_TOKENS?: number;
+  FEISHU_APP_ID?: string;
+  FEISHU_APP_SECRET?: string;
+  WEB_SEARCH_PROVIDER?: string;
+  WEB_SEARCH_API_KEY?: string;
+  DATA_DIR: string;
+  WORKSPACE_DIR?: string;
+  SCRIPT_TIMEOUT: number;
+  MAX_CONVERSATION_MESSAGES?: number;
+}
+
+function stripPrefix(raw: RawConfig): Config {
+  return {
+    LLM_API_KEY: raw.CASTOR_LLM_API_KEY,
+    LLM_BASEURL: raw.CASTOR_LLM_BASEURL,
+    LLM_MODEL_NAME: raw.CASTOR_LLM_MODEL_NAME,
+    LLM_PROTOCOL: raw.CASTOR_LLM_PROTOCOL as "openai" | "anthropic" | undefined,
+    LLM_MAX_TOKENS: raw.CASTOR_LLM_MAX_TOKENS,
+    FEISHU_APP_ID: raw.CASTOR_FEISHU_APP_ID,
+    FEISHU_APP_SECRET: raw.CASTOR_FEISHU_APP_SECRET,
+    WEB_SEARCH_PROVIDER: raw.CASTOR_WEB_SEARCH_PROVIDER,
+    WEB_SEARCH_API_KEY: raw.CASTOR_WEB_SEARCH_API_KEY,
+    DATA_DIR: raw.CASTOR_DATA_DIR,
+    WORKSPACE_DIR: raw.CASTOR_WORKSPACE_DIR,
+    SCRIPT_TIMEOUT: raw.CASTOR_SCRIPT_TIMEOUT,
+    MAX_CONVERSATION_MESSAGES: raw.CASTOR_MAX_CONVERSATION_MESSAGES,
+  };
+}
 
 function detectProtocol(baseUrl: string, model: string): "openai" | "anthropic" {
   if (baseUrl.includes("anthropic")) return "anthropic";
@@ -45,10 +80,11 @@ function detectProtocol(baseUrl: string, model: string): "openai" | "anthropic" 
 
 export function loadConfig(): Config {
   const raw = configSchema.parse(process.env);
-  if (!raw.LLM_PROTOCOL) {
-    raw.LLM_PROTOCOL = detectProtocol(raw.LLM_BASEURL, raw.LLM_MODEL_NAME);
+  const cfg = stripPrefix(raw);
+  if (!cfg.LLM_PROTOCOL) {
+    cfg.LLM_PROTOCOL = detectProtocol(cfg.LLM_BASEURL, cfg.LLM_MODEL_NAME);
   }
-  return raw;
+  return cfg;
 }
 
 export const config = loadConfig();

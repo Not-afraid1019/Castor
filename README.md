@@ -20,32 +20,34 @@ cp .env.example .env
 
 ```env
 # LLM（必填）
-LLM_API_KEY=sk-xxx
-LLM_BASEURL=https://api.openai.com/v1
-LLM_MODEL_NAME=gpt-4o
+CASTOR_LLM_API_KEY=sk-xxx
+CASTOR_LLM_BASEURL=https://api.openai.com/v1
+CASTOR_LLM_MODEL_NAME=gpt-4o
 
 # 飞书（bot 模式必填）
-FEISHU_APP_ID=cli_xxx
-FEISHU_APP_SECRET=xxx
+CASTOR_FEISHU_APP_ID=cli_xxx
+CASTOR_FEISHU_APP_SECRET=xxx
 ```
+
+所有环境变量均以 `CASTOR_` 为前缀，避免与其他项目冲突。
 
 #### 完整配置说明
 
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| `LLM_API_KEY` | 是 | - | LLM API 密钥 |
-| `LLM_BASEURL` | 是 | - | API 地址（兼容 OpenAI 协议的任意服务） |
-| `LLM_MODEL_NAME` | 是 | - | 模型名称 |
-| `LLM_PROTOCOL` | 否 | 自动检测 | `openai` 或 `anthropic`，不填则根据 URL/模型名自动判断 |
-| `LLM_MAX_TOKENS` | 否 | 不限 | 最大输出 token 数，不设则由模型上下文窗口决定 |
-| `FEISHU_APP_ID` | bot 模式 | - | 飞书应用 App ID |
-| `FEISHU_APP_SECRET` | bot 模式 | - | 飞书应用 App Secret |
-| `WEB_SEARCH_PROVIDER` | 否 | - | 搜索引擎提供商（目前支持 `tavily`） |
-| `WEB_SEARCH_API_KEY` | 否 | - | 搜索 API 密钥 |
-| `DATA_DIR` | 否 | `./data` | 数据存储目录 |
-| `WORKSPACE_DIR` | 否 | - | 工作目录，设置后文件操作受限于此目录 |
-| `SCRIPT_TIMEOUT` | 否 | 30000 | 脚本执行超时（毫秒） |
-| `MAX_CONVERSATION_MESSAGES` | 否 | 不限 | 单会话最大保留消息数，不设则保留全部历史 |
+| `CASTOR_LLM_API_KEY` | 是 | - | LLM API 密钥 |
+| `CASTOR_LLM_BASEURL` | 是 | - | API 地址（兼容 OpenAI 协议的任意服务） |
+| `CASTOR_LLM_MODEL_NAME` | 是 | - | 模型名称 |
+| `CASTOR_LLM_PROTOCOL` | 否 | 自动检测 | `openai` 或 `anthropic`，不填则根据 URL/模型名自动判断 |
+| `CASTOR_LLM_MAX_TOKENS` | 否 | 不限 | 最大输出 token 数，不设则由模型上下文窗口决定 |
+| `CASTOR_FEISHU_APP_ID` | bot 模式 | - | 飞书应用 App ID |
+| `CASTOR_FEISHU_APP_SECRET` | bot 模式 | - | 飞书应用 App Secret |
+| `CASTOR_WEB_SEARCH_PROVIDER` | 否 | - | 搜索引擎提供商（目前支持 `tavily`） |
+| `CASTOR_WEB_SEARCH_API_KEY` | 否 | - | 搜索 API 密钥 |
+| `CASTOR_DATA_DIR` | 否 | `./data` | 数据存储目录 |
+| `CASTOR_WORKSPACE_DIR` | 否 | - | 工作目录，设置后文件操作受限于此目录 |
+| `CASTOR_SCRIPT_TIMEOUT` | 否 | 30000 | 脚本执行超时（毫秒） |
+| `CASTOR_MAX_CONVERSATION_MESSAGES` | 否 | 不限 | 单会话最大保留消息数，不设则保留全部历史 |
 
 ### 3. 启动
 
