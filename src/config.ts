@@ -21,6 +21,7 @@ const configSchema = z.object({
 
   // Agent
   DATA_DIR: z.string().default("./data"),
+  WORKSPACE_DIR: z.string().optional(),
   SCRIPT_TIMEOUT: z.coerce.number().int().positive().default(30000),
   MAX_CONVERSATION_MESSAGES: z.coerce.number().int().positive().default(50),
 });

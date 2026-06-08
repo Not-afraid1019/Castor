@@ -3,25 +3,38 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { glob } from "glob";
 import type { Tool } from "./types.js";
+import { checkPathAccess } from "../utils/path-guard.js";
 
 export const fileOpsTool: Tool = {
   name: "file_ops",
   description:
-    "File operations: read, write, list, or search files. Use action to specify the operation.",
+    "File operations: read, write, list, or search files. Use action to specify the operation. " +
+    "If a path is outside the workspace, the tool will ask for user confirmation — " +
+    "retry with force: true after the user agrees.",
   parameters: z.object({
     action: z.enum(["read", "write", "list", "search"]).describe("Operation to perform"),
     path: z.string().describe("File or directory path"),
     content: z.string().optional().describe("Content to write (for write action)"),
     pattern: z.string().optional().describe("Glob pattern (for search action)"),
+    force: z.boolean().optional().describe("Set to true to bypass workspace restriction after user confirms"),
   }),
 
   async execute(args) {
-    const { action, path: targetPath, content, pattern } = args as {
+    const { action, path: targetPath, content, pattern, force } = args as {
       action: string;
       path: string;
       content?: string;
       pattern?: string;
+      force?: boolean;
     };
+
+    // Path access control
+    if (!force) {
+      const access = checkPathAccess(targetPath);
+      if (!access.allowed) {
+        return access.message;
+      }
+    }
 
     switch (action) {
       case "read": {

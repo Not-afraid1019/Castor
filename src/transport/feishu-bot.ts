@@ -3,6 +3,8 @@ import type { ITransport, MessageHandler } from "./types.js";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
 import { pickReactionEmoji } from "../utils/emoji-picker.js";
+import { splitMessage } from "../utils/message-split.js";
+import { markdownToFeishuPost } from "../utils/feishu-rich-text.js";
 
 export class FeishuBotTransport implements ITransport {
   private wsClient?: lark.WSClient;
@@ -82,21 +84,28 @@ export class FeishuBotTransport implements ITransport {
 
     try {
       const reply = await handler({ conversationId, text, senderId });
-
-      // Send reply
-      await this.apiClient!.im.message.create({
-        params: { receive_id_type: "chat_id" },
-        data: {
-          receive_id: msg.chat_id,
-          msg_type: "text",
-          content: JSON.stringify({ text: reply }),
-        },
-      });
+      await this.sendReply(msg.chat_id, reply);
     } finally {
-      // Remove thinking reaction after reply is sent (or on error)
+      // Remove reaction after reply is sent (or on error)
       if (reactionId) {
         await this.removeReaction(messageId, reactionId);
       }
+    }
+  }
+
+  private async sendReply(chatId: string, text: string): Promise<void> {
+    const chunks = splitMessage(text);
+
+    for (const chunk of chunks) {
+      const postContent = markdownToFeishuPost(chunk);
+      await this.apiClient!.im.message.create({
+        params: { receive_id_type: "chat_id" },
+        data: {
+          receive_id: chatId,
+          msg_type: "post",
+          content: JSON.stringify(postContent),
+        },
+      });
     }
   }
 

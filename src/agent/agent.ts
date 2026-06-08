@@ -3,10 +3,13 @@ import type { ToolRegistry } from "../tools/registry.js";
 import type { IConversationStore, Conversation } from "../memory/types.js";
 import { buildSystemPrompt } from "./prompt.js";
 import { logger } from "../logger.js";
+import { KeyedMutex } from "../utils/mutex.js";
 
 const MAX_TOOL_ROUNDS = 10;
 
 export class Agent {
+  private mutex = new KeyedMutex();
+
   constructor(
     private llm: ILLMClient,
     private tools: ToolRegistry,
@@ -14,6 +17,36 @@ export class Agent {
   ) {}
 
   async handleMessage(conversationId: string, userMessage: string): Promise<string> {
+    // Handle commands
+    if (userMessage.trim() === "/reset") {
+      return this.resetConversation(conversationId);
+    }
+
+    // Acquire per-conversation lock to prevent concurrent access
+    const release = await this.mutex.acquire(conversationId);
+    try {
+      return await this.processMessage(conversationId, userMessage);
+    } finally {
+      release();
+    }
+  }
+
+  private async resetConversation(conversationId: string): Promise<string> {
+    const release = await this.mutex.acquire(conversationId);
+    try {
+      await this.store.save({
+        id: conversationId,
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      return "会话已重置，我们重新开始吧。";
+    } finally {
+      release();
+    }
+  }
+
+  private async processMessage(conversationId: string, userMessage: string): Promise<string> {
     // Load or create conversation
     let conversation = await this.store.load(conversationId);
     if (!conversation) {
@@ -71,7 +104,6 @@ export class Agent {
 
       for (const tc of response.toolCalls) {
         logger.info({ tool: tc.name, args: tc.arguments }, "Executing tool");
-        // Tools already have internal error handling in registry, but wrap for safety
         const result = await this.tools.execute(tc.name, {
           ...tc.arguments,
           conversation_id: conversationId,
